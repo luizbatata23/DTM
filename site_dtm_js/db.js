@@ -1,5 +1,6 @@
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcrypt');
 
 const dbPath = path.join(__dirname, 'tdm_db.sqlite');
 
@@ -13,7 +14,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 db.serialize(() => {
 
-  // Cria tabelas se não existirem
   db.run(`
     CREATE TABLE IF NOT EXISTS jogos_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +38,22 @@ db.serialize(() => {
       senha TEXT NOT NULL
     )
   `);
+
+  // Insere ADM com senha em hash (só se ainda não existir)
+  bcrypt.hash('tabuleiros@1234', 10, (err, hash) => {
+    if (err) {
+      console.error('Erro ao gerar hash do ADM:', err.message);
+      return;
+    }
+    db.run(`
+      INSERT OR IGNORE INTO usuario (nome, usuario, email, telefone, senha)
+      VALUES ('ADM', 'adm', 'adm@tdm.com', '', ?)
+    `, [hash], (err) => {
+      if (err) console.error('Erro ao inserir ADM:', err.message);
+      else console.log('ADM verificado/criado com sucesso!');
+    });
+  });
+
   // Insere jogos apenas se o banco estiver vazio
   db.get(`SELECT COUNT(*) as total FROM jogos_info`, (err, row) => {
     if (err || row.total > 0) return;

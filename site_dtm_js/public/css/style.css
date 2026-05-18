@@ -260,7 +260,7 @@ body {
   transform-style: preserve-3d;
 }
 
-.game-card:hover .card-inner {
+.game-card.virado .card-inner {
   transform: rotateY(180deg);
 }
 

@@ -106,14 +106,32 @@ function selecionarMembro(elemento) {
 }
 // EXECUÇÃO CENTRALIZADA E CORRIGIDA
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Menu Mobile
-    configurarMenuToggle();
 
-    // 2. Outras funções de navegação
-    if (typeof destacarLinkAtivo === "function") destacarLinkAtivo();
-    if (typeof processarParametrosEAncoras === "function") processarParametrosEAncoras();
+  // 1. Menu Mobile
+  configurarMenuToggle();
 
-    // 3. Inicia a animação de scroll
-    initScrollReveal();
-    selecionarMembro(); // Certifique-se de que esta função seja chamada apenas quando necessário, como em um evento de clique específico.
+  // 2. Outras funções de navegação
+  if (typeof destacarLinkAtivo === "function") destacarLinkAtivo();
+  if (typeof processarParametrosEAncoras === "function") processarParametrosEAncoras();
+
+  // 3. Animação de scroll
+  initScrollReveal();
+
+  // 4. Vira o card ao clicar
+  // 4. Vira o card ao clicar (e desivra os outros)
+const cards = document.querySelectorAll('.game-card');
+cards.forEach(card => {
+  card.addEventListener('click', () => {
+    const jaEstaVirado = card.classList.contains('virado');
+
+    // Desivra todos
+    cards.forEach(c => c.classList.remove('virado'));
+
+    // Se o card clicado NÃO estava virado, vira ele
+    if (!jaEstaVirado) {
+      card.classList.add('virado');
+    }
+  });
+});
+
 });
