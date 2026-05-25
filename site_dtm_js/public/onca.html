@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Onça em JavaScript</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: #e6dfc3;
+            border: 2px solid #8b5a2b;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        #status {
+            font-size: 24px;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #8b5a2b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover { background-color: #6e4720; }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="logo-container">
+            <img src="/img/51 Sem Título_20250220100547.png" alt="Logo" class="logo-icon">
+            <span class="logo-text">Tabuleiros do Mundo</span>
+        </div>
+
+        <div class="menu-toggle">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+
+        <nav class="main-nav" id="nav-list">
+            <a href="/onca.html" class="nav-link">Início</a>
+            <!-- continua igual -->
+            <a href="/home" class="nav-link">Início</a>
+            <!-- ERA: catalogo.php -->
+            <a href="/catalogo" class="nav-link">Catálogo</a>
+            <!-- ERA: sobre.html (pode continuar relativo, mas vamos padronizar) -->
+            <a href="/sobre" class="nav-link active">Sobre Nós</a>
+            <!-- ERA: /index.php -->
+            <a href="/" class="nav-link login">Login</a>
+        </nav>
+    </header>
+
+    <div id="status">Turno da Onça (Vermelho)</div>
+    <canvas id="tabuleiro" width="500" height="700"></canvas>
+    <br>
+    <button onclick="reiniciarJogo()">Reiniciar Jogo</button>
+
+    <script>
+        const canvas = document.getElementById('tabuleiro');
+        const ctx = canvas.getContext('2d');
+        const statusDiv = document.getElementById('status');
+
+        // Configurações do Tabuleiro
+        const TAM_CASA = 80;
+        const OFFSET_X = 90;
+        const OFFSET_Y = 90;
+        const RAIO_PECA = 20;
+
+        // Estado do Jogo
+        let posicoes = []; // Lista de todas as coordenadas (x, y) do tabuleiro
+        let adjacencias = []; // Lista de adjacências (quais pontos se conectam)
+        let pecas = {}; // Mapeia o índice do ponto para o tipo de peça ('O' para Onça, 'C' para Cachorro, null para Vazio)
+        let turno = 'O'; // 'O' = Onça, 'C' = Cachorro
+        let pecaSelecionada = null; // Índice da peça atualmente selecionada
+        let cachorrosCapturados = 0;
+        let jogoAtivo = true;
+
+        // 1. INICIALIZAÇÃO DO TABULEIRO (Coordenadas dos 31 pontos)
+        function inicializarTabuleiro() {
+            posicoes = [];
+            pecas = {};
+            
+            // Grid principal de 5x5 (Altiplano)
+            for (let y = 0; y < 5; y++) {
+                for (let x = 0; x < 5; x++) {
+                    posicoes.push({ x: OFFSET_X + x * TAM_CASA, y: OFFSET_Y + y * TAM_CASA });
+                }
+            }
+            // "Toca" da onça (Triângulo inferior)
+            posicoes.push({ x: OFFSET_X + 2 * TAM_CASA, y: OFFSET_Y + 5 * TAM_CASA }); // Ponto 25 (Vértice do triângulo)
+            posicoes.push({ x: OFFSET_X + 1 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // Ponto 26 (Base esquerda)
+            posicoes.push({ x: OFFSET_X + 2 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // Ponto 27 (Base centro)
+            posicoes.push({ x: OFFSET_X + 3 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // Ponto 28 (Base direita)
+            posicoes.push({ x: OFFSET_X + 0 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // Ponto 29 (Extrema esquerda)
+            posicoes.push({ x: OFFSET_X + 4 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // Ponto 30 (Extrema direita)
+
+            // Configurar peças iniciais
+            // Cachorros ocupam as linhas 0 e 1 inteiras, e as pontas da linha 2
+            for (let i = 0; i < 31; i++) {
+                if (i < 10 || i === 10 || i === 11 || i === 13 || i === 14) {
+                    pecas[i] = 'C';
+                } else if (i === 12) {
+                    pecas[i] = 'O'; // Onça começa exatamente no centro (ponto 12)
+                } else {
+                    pecas[i] = null; // Demais posições vazias
+                }
+            }
+
+            definirConexoes();
+        }
+
+        // 2. DEFINIÇÃO DAS LINHAS DE CONEXÃO (Regras de movimento)
+        function definirConexoes() {
+            adjacencias = Array(31).fill(null).map(() => []);
+
+            // Conexões horizontais e verticais do grid 5x5
+            for (let y = 0; y < 5; y++) {
+                for (let x = 0; x < 5; x++) {
+                    let atual = y * 5 + x;
+                    if (x < 4) adicionarAresta(atual, atual + 1); // Horizontal
+                    if (y < 4) adicionarAresta(atual, atual + 5); // Vertical
+                }
+            }
+
+            // Diagonais do grid 5x5 (Apenas em pontos com interseção diagonal padrão)
+            const pontosDiagonais = [
+                0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24
+            ];
+            for (let i of pontosDiagonais) {
+                let x = i % 5;
+                let y = Math.floor(i / 5);
+                if (x < 4 && y < 4 && ((x+y)%2 === 0)) adicionarAresta(i, i + 6); // Diagonal descendente
+                if (x > 0 && y < 4 && ((x+y)%2 === 0)) adicionarAresta(i, i + 4); // Diagonal ascendente
+            }
+
+            // Conexões da Toca (Triângulo)
+            adicionarAresta(22, 25); // Conexão da base do grid com o topo do triângulo
+            adicionarAresta(25, 26); adicionarAresta(25, 27); adicionarAresta(25, 28);
+            adicionarAresta(29, 26); adicionarAresta(26, 27); adicionarAresta(27, 28); adicionarAresta(28, 30);
+            adicionarAresta(20, 29); adicionarAresta(24, 30); // Diagonais externas da toca
+        }
+
+        function adicionarAresta(u, v) {
+            if (!adjacencias[u].includes(v)) adjacencias[u].push(v);
+            if (!adjacencias[v].includes(u)) adjacencias[v].push(u);
+        }
+
+        // 3. RENDERIZAÇÃO (Desenho do Canvas)
+        function desenhar() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar Linhas do Tabuleiro
+            ctx.strokeStyle = '#5c3a21';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < adjacencias.length; i++) {
+                let p1 = posicoes[i];
+                for (let vizinho of adjacencias[i]) {
+                    if (vizinho > i) { // Evita desenhar a mesma linha duas vezes
+                        let p2 = posicoes[vizinho];
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Desenhar Peças e Seleção
+            for (let i = 0; i < 31; i++) {
+                let p = posicoes[i];
+                if (pecas[i] !== null) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, RAIO_PECA, 0, 2 * Math.PI);
+                    
+                    if (pecas[i] === 'O') {
+                        ctx.fillStyle = '#d9381e'; // Onça (Vermelho)
+                    } else {
+                        ctx.fillStyle = '#2a6f97'; // Cachorro (Azul)
+                    }
+                    ctx.fill();
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Destaque se a peça estiver selecionada
+                    if (pecaSelecionada === i) {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, RAIO_PECA + 5, 0, 2 * Math.PI);
+                        ctx.strokeStyle = '#ffeb3b';
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                    }
+                } else {
+                    // Desenha um ponto discreto para casas vazias
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#5c3a21';
+                    ctx.fill();
+                }
+            }
+        }
+
+        // 4. LÓGICA DE CAPTURA DA ONÇA
+        function obterPontoDeSalto(origem, vizinho) {
+            // Retorna o índice do ponto após o "pulo" em linha reta, se existir.
+            let p1 = posicoes[origem];
+            let p2 = posicoes[vizinho];
+            
+            // Calcula a direção do vetor de movimento
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+
+            // Alvo esperado
+            let alvoX = p2.x + dx;
+            let alvoY = p2.y + dy;
+
+            // Procura se existe um ponto válido com essas coordenadas aproximadas
+            for (let i = 0; i < 31; i++) {
+                if (Math.abs(posicoes[i].x - alvoX) < 5 && Math.abs(posicoes[i].y - alvoY) < 5) {
+                    // Verifica se o ponto de destino está conectado ao vizinho pulado
+                    if (adjacencias[vizinho].includes(i)) {
+                        return i;
+                    }
+                }
+            }
+            return null;
+        }
+
+        // 5. INTERAÇÃO DO CLIQUE
+        canvas.addEventListener('click', function(event) {
+            if (!jogoAtivo) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            // Descobre qual ponto foi clicado
+            let pontoClicado = null;
+            for (let i = 0; i < 31; i++) {
+                let dist = Math.hypot(posicoes[i].x - mouseX, posicoes[i].y - mouseY);
+                if (dist <= RAIO_PECA + 10) {
+                    pontoClicado = i;
+                    break;
+                }
+            }
+
+            if (pontoClicado === null) return;
+
+            // Lógica de Seleção de Peça
+            if (pecaSelecionada === null) {
+                if (pecas[pontoClicado] === turno) {
+                    pecaSelecionada = pontoClicado;
+                }
+            } else {
+                // Se clicar na mesma peça ou em outra do mesmo time, muda a seleção
+                if (pecas[pontoClicado] === turno) {
+                    pecaSelecionada = pontoClicado;
+                } else if (pecas[pontoClicado] === null) {
+                    // Tenta mover para a casa vazia clicada
+                    processarMovimento(pecaSelecionada, pontoClicado);
+                }
+            }
+            desenhar();
+        });
+
+        // 6. PROCESSAMENTO DE MOVIMENTOS E REGRAS
+        function processarMovimento(origem, destino) {
+            // Caso 1: Movimento Simples (Vizinho direto)
+            if (adjacencias[origem].includes(destino)) {
+                pecas[destino] = turno;
+                pecas[origem] = null;
+                finalizarTurno();
+            } 
+            // Caso 2: Onça tentando capturar (Pulo)
+            else if (turno === 'O') {
+                for (let vizinho of adjacencias[origem]) {
+                    if (pecas[vizinho] === 'C') { // Tem um cachorro no caminho?
+                        let pontoSalto = obterPontoDeSalto(origem, vizinho);
+                        if (pontoSalto === destino && pecas[pontoSalto] === null) {
+                            // Captura validada!
+                            pecas[destino] = 'O';
+                            pecas[origem] = null;
+                            pecas[vizinho] = null; // Remove o cachorro
+                            cachorrosCapturados++;
+                            finalizarTurno();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 7. VERIFICAÇÃO DE FIM DE JOGO
+        function finalizarTurno() {
+            pecaSelecionada = null;
+            verificarFimDeJogo();
+
+            if (jogoAtivo) {
+                turno = (turno === 'O') ? 'C' : 'O';
+                statusDiv.innerText = `Turno do(s) ${turno === 'O' ? 'Onça (Vermelho)' : 'Cachorros (Azul)'}`;
+            }
+        }
+
+        function verificarFimDeJogo() {
+            // Vitória da Onça: Capturou 5 cachorros
+            if (cachorrosCapturados >= 5) {
+                statusDiv.innerText = "Fim de Jogo: A Onça Venceu!";
+                statusDiv.style.color = "#d9381e";
+                jogoAtivo = false;
+                return;
+            }
+
+            // Vitória dos Cachorros: Encurralar a Onça (Sem movimentos válidos)
+            let oncaIndex = -1;
+            for (let i = 0; i < 31; i++) {
+                if (pecas[i] === 'O') {
+                    oncaIndex = i;
+                    break;
+                }
+            }
+
+            let temMovimentoValido = false;
+            // Verifica movimentos simples da onça
+            for (let vizinho of adjacencias[oncaIndex]) {
+                if (pecas[vizinho] === null) temMovimentoValido = true;
+                // Verifica movimentos de captura possíveis
+                if (pecas[vizinho] === 'C') {
+                    let salto = obterPontoDeSalto(oncaIndex, vizinho);
+                    if (salto !== null && pecas[salto] === null) temMovimentoValido = true;
+                }
+            }
+
+            if (!temMovimentoValido) {
+                statusDiv.innerText = "Fim de Jogo: Os Cachorros Venceram!";
+                statusDiv.style.color = "#2a6f97";
+                jogoAtivo = false;
+            }
+        }
+
+        function reiniciarJogo() {
+            turno = 'O';
+            pecaSelecionada = null;
+            cachorrosCapturados = 0;
+            jogoAtivo = true;
+            statusDiv.innerText = "Turno da Onça (Vermelho)";
+            statusDiv.style.color = "#333";
+            inicializarTabuleiro();
+            desenhar();
+        }
+
+        // Início imediato ao carregar a página
+        inicializarTabuleiro();
+        desenhar();
+    </script>
+</body>
+</html>
