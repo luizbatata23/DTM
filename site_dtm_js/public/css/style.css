@@ -986,3 +986,20 @@ body {
   gap: 5px;
   flex: 0 0 auto;
 }
+.btn-editar {
+  margin-top: 10px;
+  background-color: #2980b9;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.3s;
+}
+
+.btn-editar:hover {
+  background-color: #1f6391;
+}

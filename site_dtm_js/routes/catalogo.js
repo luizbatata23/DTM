@@ -54,6 +54,31 @@ router.post('/adicionar', (req, res) => {
   });
 });
 
+// POST - edita jogo
+router.post('/editar/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const { titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota } = req.body;
+
+  if (!id || !titulo) {
+    return res.status(400).send('ID e título são obrigatórios.');
+  }
+
+  const sql = `
+    UPDATE jogos_info
+    SET titulo = ?, origem = ?, jogadores = ?, imagem_url = ?,
+        historia = ?, regras = ?, categoria = ?, nota = ?
+    WHERE id = ?
+  `;
+
+  db.run(sql, [titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota || null, id], function (err) {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Erro ao editar jogo: ' + err.message);
+    }
+    res.redirect('/catalogo');
+  });
+});
+
 // POST - exclui jogo
 router.post('/excluir/:id', (req, res) => {
   const id = parseInt(req.params.id);

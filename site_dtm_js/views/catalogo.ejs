@@ -93,6 +93,18 @@
   <a href="/tabuleiro?id=<%= jogo.id %>" class="btn-details">VER DETALHES</a>
 
   <% if (isAdmin) { %>
+    <button class="btn-editar" onclick="abrirModalEditar({
+      id: '<%= jogo.id %>',
+      titulo: `<%= jogo.titulo.replace(/`/g, '') %>`,
+      origem: `<%= (jogo.origem || '').replace(/`/g, '') %>`,
+      jogadores: `<%= (jogo.jogadores || '').replace(/`/g, '') %>`,
+      imagem_url: `<%= (jogo.imagem_url || '').replace(/`/g, '') %>`,
+      categoria: '<%= jogo.categoria %>',
+      nota: '<%= jogo.nota %>',
+      historia: `<%= (jogo.historia || '').replace(/`/g, '').replace(/\n/g, ' ') %>`,
+      regras: `<%= (jogo.regras || '').replace(/`/g, '').replace(/\n/g, ' ') %>`
+    })">✏️ Editar</button>
+
     <form action="/catalogo/excluir/<%= jogo.id %>" method="POST"
           onsubmit="return confirmarExclusao('<%= jogo.titulo %>')">
       <button type="submit" class="btn-excluir">🗑 Excluir</button>
@@ -106,28 +118,24 @@
       </div>
 
     </div>
-    <% if (isAdmin) { %>
+  <% if (isAdmin) { %>
+
   <!-- Botão flutuante de adicionar -->
   <button class="btn-add-jogo" onclick="abrirModal()">＋ Adicionar Jogo</button>
 
-  <!-- Modal -->
+  <!-- Modal de ADICIONAR -->
   <div class="modal-overlay" id="modalOverlay" onclick="fecharModal(event)">
     <div class="modal-box">
-      <h2>Adicionar Novo Jogo</h2>
+      <h2>➕ Adicionar Novo Jogo</h2>
       <form action="/catalogo/adicionar" method="POST">
-
         <label>Título *</label>
         <input type="text" name="titulo" required placeholder="Ex: Xadrez">
-
         <label>Origem</label>
         <input type="text" name="origem" placeholder="Ex: Índia / Europa">
-
         <label>Jogadores</label>
         <input type="text" name="jogadores" placeholder="Ex: 2 jogadores">
-
         <label>URL da Imagem</label>
-        <input type="text" name="imagem_url" placeholder="https://...">
-
+        <input type="text" name="imagem_url" placeholder="/img/nome.png">
         <label>Categoria</label>
         <select name="categoria">
           <option value="estrategia">🧠 Estratégia</option>
@@ -135,24 +143,54 @@
           <option value="familia">👨‍👩‍👧‍👦 Família</option>
           <option value="infantil">🧸 Infantil</option>
         </select>
-
         <label>Nota (0 a 5)</label>
         <input type="number" name="nota" min="0" max="5" step="0.1" placeholder="Ex: 4.5">
-
         <label>História</label>
         <textarea name="historia" rows="3" placeholder="Conte a história do jogo..."></textarea>
-
         <label>Regras</label>
         <textarea name="regras" rows="3" placeholder="Descreva as regras principais..."></textarea>
-
         <div class="modal-actions">
           <button type="button" onclick="fecharModalBtn()">Cancelar</button>
           <button type="submit">Salvar Jogo</button>
         </div>
-
       </form>
     </div>
   </div>
+
+  <!-- Modal de EDITAR -->
+  <div class="modal-overlay" id="modalEditarOverlay" onclick="fecharModalEditar(event)">
+    <div class="modal-box">
+      <h2>✏️ Editar Jogo</h2>
+      <form id="formEditar" action="" method="POST">
+        <label>Título *</label>
+        <input type="text" name="titulo" id="edit-titulo" required>
+        <label>Origem</label>
+        <input type="text" name="origem" id="edit-origem">
+        <label>Jogadores</label>
+        <input type="text" name="jogadores" id="edit-jogadores">
+        <label>URL da Imagem</label>
+        <input type="text" name="imagem_url" id="edit-imagem_url">
+        <label>Categoria</label>
+        <select name="categoria" id="edit-categoria">
+          <option value="estrategia">🧠 Estratégia</option>
+          <option value="sorte">🎲 Sorte / Corrida</option>
+          <option value="familia">👨‍👩‍👧‍👦 Família</option>
+          <option value="infantil">🧸 Infantil</option>
+        </select>
+        <label>Nota (0 a 5)</label>
+        <input type="number" name="nota" id="edit-nota" min="0" max="5" step="0.1">
+        <label>História</label>
+        <textarea name="historia" id="edit-historia" rows="3"></textarea>
+        <label>Regras</label>
+        <textarea name="regras" id="edit-regras" rows="3"></textarea>
+        <div class="modal-actions">
+          <button type="button" onclick="fecharModalEditarBtn()">Cancelar</button>
+          <button type="submit">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 <% } %>
   </main>
 
@@ -200,6 +238,38 @@
     function confirmarExclusao(titulo) {
       return confirm('Tem certeza que deseja excluir "' + titulo + '"?\nEssa ação não pode ser desfeita.');
     }
+    function abrirModalEditar(jogo) {
+  // Preenche o formulário com os dados do jogo
+  document.getElementById('edit-titulo').value     = jogo.titulo;
+  document.getElementById('edit-origem').value     = jogo.origem;
+  document.getElementById('edit-jogadores').value  = jogo.jogadores;
+  document.getElementById('edit-imagem_url').value = jogo.imagem_url;
+  document.getElementById('edit-nota').value       = jogo.nota;
+  document.getElementById('edit-historia').value   = jogo.historia;
+  document.getElementById('edit-regras').value     = jogo.regras;
+
+  // Seleciona a categoria correta no select
+  const select = document.getElementById('edit-categoria');
+  for (let opt of select.options) {
+    opt.selected = (opt.value === jogo.categoria);
+  }
+
+  // Define a action do form com o id correto
+  document.getElementById('formEditar').action = `/catalogo/editar/${jogo.id}`;
+
+  // Abre o modal
+  document.getElementById('modalEditarOverlay').classList.add('ativo');
+}
+
+function fecharModalEditarBtn() {
+  document.getElementById('modalEditarOverlay').classList.remove('ativo');
+}
+
+function fecharModalEditar(event) {
+  if (event.target.id === 'modalEditarOverlay') {
+    fecharModalEditarBtn();
+  }
+}
   </script>
   <script src="js/script.js"></script>
 </body>
