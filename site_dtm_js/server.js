@@ -10,13 +10,11 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // ========================
-// MIDDLEWARES (sempre antes das rotas)
+// MIDDLEWARES
 // ========================
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
 app.use(express.static(path.join(__dirname, 'public')));
-
 app.use(session({
   secret: 'tdm_secret_key_2025',
   resave: false,
@@ -25,23 +23,23 @@ app.use(session({
 }));
 
 // ========================
-// ROTAS ESTÁTICAS
+// ROTAS
 // ========================
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/home', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'home.html'));
+// Logout (antes das outras rotas)
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/');
+  });
 });
 
-app.get('/sobre', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'sobre.html'));
-});
+// Páginas dinâmicas
+app.use('/', require('./routes/paginas'));
 
-// ========================
-// ROTAS DINÂMICAS (sempre depois dos middlewares)
-// ========================
+// Rotas de funcionalidades
 app.use('/catalogo', require('./routes/catalogo'));
 app.use('/tabuleiro', require('./routes/tabuleiro'));
 app.use('/', require('./routes/auth'));

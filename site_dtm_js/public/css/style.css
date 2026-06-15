@@ -71,7 +71,7 @@ body {
 .main-nav .nav-link {
   color: var(--text-light);
   text-decoration: none;
-  margin-left: 15px;
+  margin-left: 0;
   font-size: 0.9rem;
   font-weight: 500;
   transition: 0.3s;
@@ -896,4 +896,93 @@ body {
 }
 .btn-excluir:hover {
   background-color: #96281b;
+}
+/* Indicador de usuário logado */
+.usuario-logado {
+  color: var(--logo-gold);
+  font-weight: bold;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  margin-left: 15px;
+  background: rgba(179, 125, 0, 0.15);
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--logo-gold);
+}
+
+.btn-logout {
+  color: #c0392b !important;
+  border-bottom: none !important;
+  margin-left: 100px;
+}
+
+.btn-logout:hover {
+  color: #96281b !important;
+}
+.main-header {
+  background-color: var(--header-bg);
+  padding: 1rem 5%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+/* NAV CENTRALIZADO */
+.main-nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+/* ÁREA DA DIREITA */
+.header-auth {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.usuario-logado {
+  color: var(--logo-gold);
+  font-weight: bold;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  background: rgba(179, 125, 0, 0.15);
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--logo-gold);
+}
+
+.btn-logout {
+  color: #c0392b !important;
+  border-bottom: none !important;
+}
+
+.btn-logout:hover {
+  color: #96281b !important;
+}
+
+/* HAMBÚRGUER */
+.menu-toggle {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  gap: 5px;
+  flex: 0 0 auto;
 }

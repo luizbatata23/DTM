@@ -12,22 +12,32 @@
 <body>
 
   <header class="main-header">
-    <div class="logo-container">
-      <img src="/img/51 Sem Título_20250220100547.png" alt="Logo" class="logo-icon">
-      <span class="logo-text">Tabuleiros do Mundo</span>
-    </div>
-    <div class="menu-toggle">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-    </div>
-    <nav class="main-nav" id="nav-list">
-      <a href="/home" class="nav-link">Início</a>
-      <a href="/catalogo" class="nav-link">Catálogo</a>
-      <a href="/sobre" class="nav-link">Sobre Nós</a>
+  <div class="logo-container">
+    <img src="/img/51 Sem Título_20250220100547.png" alt="Logo" class="logo-icon">
+    <span class="logo-text">Tabuleiros do Mundo</span>
+  </div>
+
+  <nav class="main-nav" id="nav-list">
+    <a href="/home" class="nav-link">Início</a>
+    <a href="/catalogo" class="nav-link">Catálogo</a>
+    <a href="/sobre" class="nav-link">Sobre Nós</a>
+  </nav>
+
+  <div class="header-auth">
+    <% if (usuario) { %>
+      <span class="usuario-logado">👤 <%= usuario %></span>
+      <a href="/logout" class="nav-link btn-logout">Sair</a>
+    <% } else { %>
       <a href="/" class="nav-link login">Login</a>
-    </nav>
-  </header>
+    <% } %>
+  </div>
+
+  <div class="menu-toggle">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+</header>
 
   <main class="hero-section">
     <div class="hero-container">

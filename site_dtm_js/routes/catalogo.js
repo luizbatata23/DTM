@@ -11,22 +11,22 @@ router.get('/', (req, res) => {
     FROM jogos_info ORDER BY titulo ASC
   `;
 
-  db.all(sql, (err, jogos) => {
+  db.all(sql, [], (err, jogos) => {
     if (err) {
       console.error(err);
       return res.status(500).send('Erro ao buscar jogos: ' + err.message);
     }
 
-    jogos = jogos.map(jogo => {
-      const historiaShort = jogo.historia
-        ? jogo.historia.substring(0, 120) + (jogo.historia.length > 120 ? '...' : '')
-        : '';
-      return { ...jogo, historiaShort };
-    });
+    jogos = jogos.map(j => ({
+      ...j,
+      historiaShort: j.historia
+        ? j.historia.substring(0, 120) + (j.historia.length > 120 ? '...' : '')
+        : ''
+    }));
 
-    // Passa isAdmin para o template
     res.render('catalogo', {
       jogos,
+      usuario: req.session.usuario || null,
       isAdmin: req.session.isAdmin === true
     });
   });
@@ -50,7 +50,6 @@ router.post('/adicionar', (req, res) => {
       console.error(err);
       return res.status(500).send('Erro ao adicionar jogo: ' + err.message);
     }
-
     res.redirect('/catalogo');
   });
 });
@@ -68,7 +67,6 @@ router.post('/excluir/:id', (req, res) => {
       console.error(err);
       return res.status(500).send('Erro ao excluir jogo: ' + err.message);
     }
-
     res.redirect('/catalogo');
   });
 });
