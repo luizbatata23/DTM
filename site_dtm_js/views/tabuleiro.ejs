@@ -205,6 +205,28 @@
       </div>
 
     </div>
+    <!-- Seção de Vídeos Tutoriais -->
+<div class="info-section">
+  <h2>🎬 Vídeos Tutoriais</h2>
+  <p style="margin-bottom: 20px;">Aprenda a jogar assistindo aos tutoriais selecionados pela nossa equipe.</p>
+
+  <div class="videos-grid">
+
+    <!-- Para adicionar um vídeo, cole o link do YouTube e troque o ID -->
+    <!-- Exemplo: https://www.youtube.com/watch?v=XXXXXXXXXXX → o ID é XXXXXXXXXXX -->
+
+    <div class="video-wrapper">
+      <iframe
+        src="https://www.youtube.com/embed/VIDEO_ID_1"
+        title="Tutorial <%= jogo.titulo %> - Parte 1"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+      <p class="video-label">Como jogar <%= jogo.titulo %></p>
+    </div>
+  </div>
+</div>
   </main>
 
   <footer class="main-footer">
