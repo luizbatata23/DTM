@@ -965,7 +965,6 @@ body {
     text-align: center;
     display: block;
     font-size: 1.1rem;
-    
   }
 
   .menu-toggle.active .bar:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
