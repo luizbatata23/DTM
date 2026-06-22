@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDM | Jogo da Onça</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <style>
+    .onca-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+      gap: 20px;
+    }
+
+    .onca-titulo {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 800;
+      color: var(--text-dark);
+    }
+
+    #status {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--text-dark);
+      background: var(--card-glass);
+      padding: 10px 28px;
+      border-radius: 50px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    #tabuleiro {
+      background-color: #e6dfc3;
+      border: 3px solid #8b5a2b;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .btn-reiniciar {
+      padding: 12px 30px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      background-color: var(--logo-gold);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      transition: background 0.3s, transform 0.2s;
+      box-shadow: 0 4px 15px rgba(179, 125, 0, 0.3);
+    }
+
+    .btn-reiniciar:hover {
+      background-color: #8a5f00;
+      transform: scale(1.05);
+    }
+
+    .onca-legenda {
+      display: flex;
+      gap: 30px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-dark);
+    }
+
+    .legenda-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legenda-circulo {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #000;
+    }
+
+    @media (max-width: 540px) {
+      #tabuleiro {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="main-header">
+    <div class="logo-container">
+      <img src="/img/51 Sem Título_20250220100547.png" alt="Logo" class="logo-icon">
+      <span class="logo-text">Tabuleiros do Mundo</span>
+    </div>
+
+    <nav class="main-nav" id="nav-list">
+      <a href="/home" class="nav-link">Início</a>
+      <a href="/catalogo" class="nav-link">Catálogo</a>
+      <a href="/sobre" class="nav-link">Sobre Nós</a>
+    </nav>
+
+    <div class="header-auth">
+      <a href="/" class="nav-link login">Login</a>
+    </div>
+
+    <div class="menu-toggle">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+  </header>
+
+  <main class="hero-section">
+    <div class="onca-wrapper">
+      <h1 class="onca-titulo">🐆 Jogo da Onça</h1>
+
+      <div class="onca-legenda">
+        <div class="legenda-item">
+          <div class="legenda-circulo" style="background:#d9381e;"></div>
+          <span>Onça</span>
+        </div>
+        <div class="legenda-item">
+          <div class="legenda-circulo" style="background:#2a6f97;"></div>
+          <span>Cachorros (14 peças)</span>
+        </div>
+      </div>
+
+      <div id="status">Turno da Onça (Vermelho)</div>
+
+      <canvas id="tabuleiro" width="500" height="700"></canvas>
+
+      <button class="btn-reiniciar" onclick="reiniciarJogo()">🔄 Reiniciar Jogo</button>
+    </div>
+  </main>
+
+  <footer class="main-footer">
+    <p>© 2025 Tabuleiros do Mundo. Seu catálogo de jogos de tabuleiro.</p>
+    <div class="footer-links">
+      <a href="https://www.instagram.com/tabuleirosdomundo">Instagram</a>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+
+  <script>
+    const canvas = document.getElementById('tabuleiro');
+    const ctx = canvas.getContext('2d');
+    const statusDiv = document.getElementById('status');
+
+    const TAM_CASA = 80;
+    const OFFSET_X = 90;
+    const OFFSET_Y = 90;
+    const RAIO_PECA = 20;
+
+    let posicoes = [];
+    let adjacencias = [];
+    let pecas = {};
+    let turno = 'O';
+    let pecaSelecionada = null;
+    let cachorrosCapturados = 0;
+    let jogoAtivo = true;
+
+    function inicializarTabuleiro() {
+      posicoes = [];
+      pecas = {};
+
+      for (let y = 0; y < 5; y++) {
+        for (let x = 0; x < 5; x++) {
+          posicoes.push({ x: OFFSET_X + x * TAM_CASA, y: OFFSET_Y + y * TAM_CASA });
+        }
+      }
+
+      posicoes.push({ x: OFFSET_X + 2 * TAM_CASA, y: OFFSET_Y + 5 * TAM_CASA }); // 25
+      posicoes.push({ x: OFFSET_X + 1 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // 26
+      posicoes.push({ x: OFFSET_X + 2 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // 27
+      posicoes.push({ x: OFFSET_X + 3 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // 28
+      posicoes.push({ x: OFFSET_X + 0 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // 29
+      posicoes.push({ x: OFFSET_X + 4 * TAM_CASA, y: OFFSET_Y + 6 * TAM_CASA }); // 30
+
+      for (let i = 0; i < 31; i++) {
+        if (i < 10 || i === 10 || i === 11 || i === 13 || i === 14) {
+          pecas[i] = 'C';
+        } else if (i === 12) {
+          pecas[i] = 'O';
+        } else {
+          pecas[i] = null;
+        }
+      }
+
+      definirConexoes();
+    }
+
+    function definirConexoes() {
+      adjacencias = Array(31).fill(null).map(() => []);
+
+      for (let y = 0; y < 5; y++) {
+        for (let x = 0; x < 5; x++) {
+          let atual = y * 5 + x;
+          if (x < 4) adicionarAresta(atual, atual + 1);
+          if (y < 4) adicionarAresta(atual, atual + 5);
+        }
+      }
+
+      const pontosDiagonais = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+      for (let i of pontosDiagonais) {
+        let x = i % 5;
+        let y = Math.floor(i / 5);
+        if (x < 4 && y < 4 && ((x + y) % 2 === 0)) adicionarAresta(i, i + 6);
+        if (x > 0 && y < 4 && ((x + y) % 2 === 0)) adicionarAresta(i, i + 4);
+      }
+
+      adicionarAresta(22, 25);
+      adicionarAresta(25, 26); adicionarAresta(25, 27); adicionarAresta(25, 28);
+      adicionarAresta(29, 26); adicionarAresta(26, 27); adicionarAresta(27, 28); adicionarAresta(28, 30);
+      adicionarAresta(20, 29); adicionarAresta(24, 30);
+    }
+
+    function adicionarAresta(u, v) {
+      if (!adjacencias[u].includes(v)) adjacencias[u].push(v);
+      if (!adjacencias[v].includes(u)) adjacencias[v].push(u);
+    }
+
+    function desenhar() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#5c3a21';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < adjacencias.length; i++) {
+        let p1 = posicoes[i];
+        for (let vizinho of adjacencias[i]) {
+          if (vizinho > i) {
+            let p2 = posicoes[vizinho];
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      for (let i = 0; i < 31; i++) {
+        let p = posicoes[i];
+        if (pecas[i] !== null) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, RAIO_PECA, 0, 2 * Math.PI);
+          ctx.fillStyle = pecas[i] === 'O' ? '#d9381e' : '#2a6f97';
+          ctx.fill();
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          if (pecaSelecionada === i) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, RAIO_PECA + 5, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#ffeb3b';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+        } else {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = '#5c3a21';
+          ctx.fill();
+        }
+      }
+    }
+
+    function obterPontoDeSalto(origem, vizinho) {
+      let p1 = posicoes[origem];
+      let p2 = posicoes[vizinho];
+      let dx = p2.x - p1.x;
+      let dy = p2.y - p1.y;
+      let alvoX = p2.x + dx;
+      let alvoY = p2.y + dy;
+
+      for (let i = 0; i < 31; i++) {
+        if (Math.abs(posicoes[i].x - alvoX) < 5 && Math.abs(posicoes[i].y - alvoY) < 5) {
+          if (adjacencias[vizinho].includes(i)) return i;
+        }
+      }
+      return null;
+    }
+
+    canvas.addEventListener('click', function (event) {
+      if (!jogoAtivo) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+
+      let pontoClicado = null;
+      for (let i = 0; i < 31; i++) {
+        if (Math.hypot(posicoes[i].x - mouseX, posicoes[i].y - mouseY) <= RAIO_PECA + 10) {
+          pontoClicado = i;
+          break;
+        }
+      }
+
+      if (pontoClicado === null) return;
+
+      if (pecaSelecionada === null) {
+        if (pecas[pontoClicado] === turno) pecaSelecionada = pontoClicado;
+      } else {
+        if (pecas[pontoClicado] === turno) {
+          pecaSelecionada = pontoClicado;
+        } else if (pecas[pontoClicado] === null) {
+          processarMovimento(pecaSelecionada, pontoClicado);
+        }
+      }
+
+      desenhar();
+    });
+
+    function processarMovimento(origem, destino) {
+      if (adjacencias[origem].includes(destino)) {
+        pecas[destino] = turno;
+        pecas[origem] = null;
+        finalizarTurno();
+      } else if (turno === 'O') {
+        for (let vizinho of adjacencias[origem]) {
+          if (pecas[vizinho] === 'C') {
+            let pontoSalto = obterPontoDeSalto(origem, vizinho);
+            if (pontoSalto === destino && pecas[pontoSalto] === null) {
+              pecas[destino] = 'O';
+              pecas[origem] = null;
+              pecas[vizinho] = null;
+              cachorrosCapturados++;
+              finalizarTurno();
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    function finalizarTurno() {
+      pecaSelecionada = null;
+      verificarFimDeJogo();
+      if (jogoAtivo) {
+        turno = turno === 'O' ? 'C' : 'O';
+        statusDiv.innerText = `Turno do(s) ${turno === 'O' ? 'Onça (Vermelho)' : 'Cachorros (Azul)'}`;
+      }
+    }
+
+    function verificarFimDeJogo() {
+      if (cachorrosCapturados >= 5) {
+        statusDiv.innerText = "🏆 Fim de Jogo: A Onça Venceu!";
+        statusDiv.style.color = "#d9381e";
+        jogoAtivo = false;
+        return;
+      }
+
+      let oncaIndex = Object.keys(pecas).find(i => pecas[i] === 'O');
+      let temMovimentoValido = false;
+
+      for (let vizinho of adjacencias[oncaIndex]) {
+        if (pecas[vizinho] === null) { temMovimentoValido = true; break; }
+        if (pecas[vizinho] === 'C') {
+          let salto = obterPontoDeSalto(oncaIndex, vizinho);
+          if (salto !== null && pecas[salto] === null) { temMovimentoValido = true; break; }
+        }
+      }
+
+      if (!temMovimentoValido) {
+        statusDiv.innerText = "🏆 Fim de Jogo: Os Cachorros Venceram!";
+        statusDiv.style.color = "#2a6f97";
+        jogoAtivo = false;
+      }
+    }
+
+    function reiniciarJogo() {
+      turno = 'O';
+      pecaSelecionada = null;
+      cachorrosCapturados = 0;
+      jogoAtivo = true;
+      statusDiv.innerText = "Turno da Onça (Vermelho)";
+      statusDiv.style.color = "var(--text-dark)";
+      inicializarTabuleiro();
+      desenhar();
+    }
+
+    inicializarTabuleiro();
+    desenhar();
+  </script>
+</body>
+</html>

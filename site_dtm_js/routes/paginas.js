@@ -15,4 +15,11 @@ router.get('/sobre', (req, res) => {
   });
 });
 
+router.get('/onca', (req, res) => {
+  res.render('onca', {
+    usuario: req.session.usuario || null,
+    isAdmin: req.session.isAdmin || false
+  });
+});
+
 module.exports = router;
