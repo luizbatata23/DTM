@@ -102,8 +102,13 @@
     </nav>
 
     <div class="header-auth">
+    <% if (usuario) { %>
+      <span class="usuario-logado">👤 <%= usuario %></span>
+      <a href="/logout" class="nav-link btn-logout">Sair</a>
+    <% } else { %>
       <a href="/" class="nav-link login">Login</a>
-    </div>
+    <% } %>
+  </div>
 
     <div class="menu-toggle">
       <div class="bar"></div>
