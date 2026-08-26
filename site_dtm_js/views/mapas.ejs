@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDM | Mapas dos Tabuleiros</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <style>
+    .mapas-container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .mapas-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .mapas-header h1 {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .mapas-header p {
+      color: var(--text-light);
+      font-size: 1.05rem;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 12px 24px;
+      background: var(--card-glass);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50px;
+      color: var(--text-dark);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover,
+    .tab-btn.active {
+      background: var(--logo-gold);
+      color: #fff;
+      border-color: var(--logo-gold);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    #leaflet-map,
+    #threejs-container {
+      height: 600px;
+      width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      background: #0a0a1a;
+    }
+
+    .map-legend {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .legend-marker {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .legend-marker.estrategia { background: #e74c3c; }
+    .legend-marker.tradicional { background: #27ae60; }
+    .legend-marker.abstrato { background: #8e44ad; }
+    .legend-marker.sorte { background: #f39c12; }
+    .legend-marker.familia { background: #2980b9; }
+    .legend-marker.infantil { background: #16a085; }
+
+    .info-panel {
+      position: fixed;
+      top: 100px;
+      right: 20px;
+      width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
+      background: rgba(255, 243, 224, 0.95);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(179, 125, 0, 0.3);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      z-index: 1500;
+      display: none;
+    }
+
+    .info-panel.visible { display: block; }
+
+    .info-panel h3 {
+      color: var(--text-dark);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--logo-gold);
+      padding-right: 24px;
+    }
+
+    .info-panel img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      background: #ddd;
+    }
+
+    .info-panel .stat {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      font-size: 0.92rem;
+    }
+
+    .close-panel {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+
+    .btn-voltar,
+    .btn-admin-geo {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: var(--card-glass);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50px;
+      color: var(--text-dark);
+      text-decoration: none;
+      font-weight: 600;
+      margin: 0 8px 18px 0;
+    }
+
+    .btn-admin-geo { background: var(--logo-gold); color: #fff; }
+
+    .empty-geo {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-light);
+    }
+
+    @media (max-width: 768px) {
+      .info-panel {
+        position: static;
+        width: 100%;
+        margin-top: 16px;
+        display: none;
+      }
+      .info-panel.visible { display: block; }
+      #leaflet-map, #threejs-container { height: 420px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="main-header">
+    <div class="logo-container">
+      <img src="/img/51 Sem Título_20250220100547.png" alt="Logo" class="logo-icon">
+      <span class="logo-text">Tabuleiros do Mundo</span>
+    </div>
+
+    <nav class="main-nav" id="nav-list">
+      <a href="/home" class="nav-link">Início</a>
+      <a href="/catalogo" class="nav-link">Catálogo</a>
+      <a href="/mapas" class="nav-link">Mapas</a>
+      <a href="/sobre" class="nav-link">Sobre Nós</a>
+    </nav>
+
+    <div class="header-auth">
+      <% if (usuario) { %>
+        <span class="usuario-logado">👤 <%= usuario %></span>
+        <a href="/logout" class="nav-link btn-logout">Sair</a>
+      <% } else { %>
+        <a href="/" class="nav-link login">Login</a>
+      <% } %>
+    </div>
+
+    <div class="menu-toggle">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+  </header>
+
+  <main class="hero-section">
+    <div class="mapas-container">
+      <a href="/home" class="btn-voltar">← Voltar ao Início</a>
+      <% if (isAdmin) { %>
+        <a href="/mapas/admin" class="btn-admin-geo">Painel de coordenadas</a>
+      <% } %>
+
+      <div class="mapas-header">
+        <h1>Mapas dos Tabuleiros do Mundo</h1>
+        <p>Explore a origem geográfica dos jogos tradicionais em mapa 2D e globo 3D</p>
+      </div>
+
+      <% if (!jogos || jogos.length === 0) { %>
+        <div class="empty-geo">
+          <p>Nenhum jogo com coordenadas cadastradas ainda.</p>
+          <% if (isAdmin) { %>
+            <p><a href="/mapas/admin">Abrir painel admin</a> para definir latitude e longitude.</p>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="tab-2d" type="button">Mapa 2D</button>
+          <button class="tab-btn" data-tab="tab-3d" type="button">Globo 3D</button>
+        </div>
+
+        <div id="tab-2d" class="tab-content active">
+          <div id="leaflet-map"></div>
+        </div>
+
+        <div id="tab-3d" class="tab-content">
+          <div id="threejs-container"></div>
+        </div>
+
+        <div class="map-legend">
+          <div class="legend-item"><span class="legend-marker estrategia"></span> Estratégia</div>
+          <div class="legend-item"><span class="legend-marker tradicional"></span> Tradicional</div>
+          <div class="legend-item"><span class="legend-marker abstrato"></span> Abstrato</div>
+          <div class="legend-item"><span class="legend-marker sorte"></span> Sorte</div>
+          <div class="legend-item"><span class="legend-marker familia"></span> Família</div>
+        </div>
+      <% } %>
+    </div>
+
+    <div id="info-panel" class="info-panel">
+      <button class="close-panel" type="button" onclick="fecharPainel()">&times;</button>
+      <h3 id="panel-title">Detalhes do Jogo</h3>
+      <img id="panel-img" src="" alt="Imagem do jogo">
+      <div class="stat"><span>Origem</span><span id="panel-origem">-</span></div>
+      <div class="stat"><span>Jogadores</span><span id="panel-jogadores">-</span></div>
+      <div class="stat"><span>Categoria</span><span id="panel-categoria">-</span></div>
+      <div class="stat"><span>Nota</span><span id="panel-nota">-</span></div>
+      <div style="margin-top: 14px;">
+        <a id="panel-link" href="#" class="nav-link" style="display:block;text-align:center;">Ver detalhes</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script>
+    const jogosData = <%- geoJson %>;
+    const categoryColors = {
+      estrategia: '#e74c3c',
+      tradicional: '#27ae60',
+      abstrato: '#8e44ad',
+      sorte: '#f39c12',
+      familia: '#2980b9',
+      infantil: '#16a085'
+    };
+
+    let map = null;
+    let globeReady = false;
+    let globe = {
+      scene: null, camera: null, renderer: null, earth: null,
+      markers: [], selected: null, dragging: false, autoRotate: true
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initTabs();
+      if (jogosData.features && jogosData.features.length) {
+        initMapa2D();
+      }
+    });
+
+    function initTabs() {
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(btn.dataset.tab).classList.add('active');
+
+          if (btn.dataset.tab === 'tab-2d' && map) {
+            setTimeout(() => map.invalidateSize(), 80);
+          }
+          if (btn.dataset.tab === 'tab-3d') {
+            if (!globeReady) initGlobo3D();
+            else onGlobeResize();
+          }
+        });
+      });
+    }
+
+    function initMapa2D() {
+      map = L.map('leaflet-map', { center: [10, 20], zoom: 2, minZoom: 1.5, maxZoom: 10 });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      const group = L.featureGroup();
+      jogosData.features.forEach((feature) => {
+        const p = feature.properties;
+        const lng = feature.geometry.coordinates[0];
+        const lat = feature.geometry.coordinates[1];
+        const color = categoryColors[p.categoria] || '#b37d00';
+        const icon = L.divIcon({
+          className: 'custom-marker',
+          html: '<div style="width:26px;height:26px;background:' + color + ';border:3px solid #fff;border-radius:50%;box-shadow:0 3px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;">' + (p.titulo || '?').charAt(0) + '</div>',
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+        const marker = L.marker([lat, lng], { icon });
+        marker.bindPopup(
+          '<div style="min-width:180px;text-align:center;">' +
+          '<strong>' + escapeHtml(p.titulo) + '</strong><br>' +
+          '<small>' + escapeHtml(p.origem || '') + '</small><br>' +
+          '<button type="button" onclick="mostrarPainel(' + p.id + ')" style="margin-top:8px;padding:6px 14px;background:#b37d00;color:#fff;border:none;border-radius:16px;cursor:pointer;">Ver detalhes</button>' +
+          '</div>'
+        );
+        marker.on('click', () => mostrarPainel(p.id));
+        group.addLayer(marker);
+      });
+      group.addTo(map);
+      if (group.getLayers().length) map.fitBounds(group.getBounds().pad(0.2));
+    }
+
+    function initGlobo3D() {
+      const container = document.getElementById('threejs-container');
+      if (!container || typeof THREE === 'undefined') {
+        container.innerHTML = '<p style="color:#fff;padding:24px;text-align:center;">Não foi possível carregar o Three.js.</p>';
+        return;
+      }
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x050510);
+      const camera = new THREE.PerspectiveCamera(45, container.clientWidth / Math.max(container.clientHeight, 1), 0.1, 100);
+      camera.position.set(0, 0.35, 2.6);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+      const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+      sun.position.set(5, 3, 4);
+      scene.add(sun);
+
+      const earth = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 64, 64),
+        new THREE.MeshPhongMaterial({ color: 0x1b4f72, shininess: 8 })
+      );
+      scene.add(earth);
+
+      const loader = new THREE.TextureLoader();
+      loader.crossOrigin = 'anonymous';
+      loader.load(
+        'https://unpkg.com/three-globe@2.31.1/example/img/earth-blue-marble.jpg',
+        (tex) => {
+          earth.material.map = tex;
+          earth.material.color = new THREE.Color(0xffffff);
+          earth.material.needsUpdate = true;
+        },
+        undefined,
+        () => applyCanvasEarth(earth)
+      );
+
+      const atmosphere = new THREE.Mesh(
+        new THREE.SphereGeometry(1.045, 48, 48),
+        new THREE.MeshBasicMaterial({ color: 0x4aa3ff, transparent: true, opacity: 0.12, side: THREE.BackSide })
+      );
+      scene.add(atmosphere);
+
+      const stars = new THREE.Points(
+        (() => {
+          const g = new THREE.BufferGeometry();
+          const arr = new Float32Array(1500 * 3);
+          for (let i = 0; i < arr.length; i++) arr[i] = (Math.random() - 0.5) * 40;
+          g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+          return g;
+        })(),
+        new THREE.PointsMaterial({ color: 0xffffff, size: 0.04 })
+      );
+      scene.add(stars);
+
+      const markers = [];
+      jogosData.features.forEach((feature) => {
+        const p = feature.properties;
+        const lng = feature.geometry.coordinates[0];
+        const lat = feature.geometry.coordinates[1];
+        const color = new THREE.Color(categoryColors[p.categoria] || '#b37d00');
+        const mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(0.025, 16, 16),
+          new THREE.MeshPhongMaterial({ color: color, emissive: color, emissiveIntensity: 0.45 })
+        );
+        mesh.position.copy(latLngToVec3(lat, lng, 1.02));
+        mesh.userData = { props: p, baseColor: color };
+        earth.add(mesh);
+        markers.push(mesh);
+      });
+
+      globe = { scene, camera, renderer, earth, markers, selected: null, dragging: false, autoRotate: true, lastX: 0, lastY: 0 };
+      globeReady = true;
+
+      const canvas = renderer.domElement;
+      canvas.addEventListener('pointerdown', (e) => {
+        globe.dragging = true;
+        globe.autoRotate = false;
+        globe.lastX = e.clientX;
+        globe.lastY = e.clientY;
+      });
+      window.addEventListener('pointerup', () => { globe.dragging = false; });
+      canvas.addEventListener('pointermove', (e) => {
+        if (!globe.dragging) return;
+        const dx = e.clientX - globe.lastX;
+        const dy = e.clientY - globe.lastY;
+        globe.lastX = e.clientX;
+        globe.lastY = e.clientY;
+        earth.rotation.y += dx * 0.005;
+        earth.rotation.x = Math.max(-0.8, Math.min(0.8, earth.rotation.x + dy * 0.005));
+      });
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camera.position.z = Math.max(1.6, Math.min(4.2, camera.position.z + e.deltaY * 0.002));
+      }, { passive: false });
+      canvas.addEventListener('click', (e) => {
+        if (globe.dragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouse = new THREE.Vector2(
+          ((e.clientX - rect.left) / rect.width) * 2 - 1,
+          -((e.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(markers);
+        if (hits.length) {
+          selectGlobeMarker(hits[0].object);
+        }
+      });
+
+      window.addEventListener('resize', onGlobeResize);
+      animateGlobe();
+    }
+
+    function applyCanvasEarth(earth) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0b3d5c';
+      ctx.fillRect(0, 0, 1024, 512);
+      ctx.fillStyle = '#2e7d32';
+      [[180, 140, 220, 90], [280, 230, 90, 140], [520, 110, 80, 70], [540, 180, 90, 150], [640, 90, 280, 160], [820, 300, 90, 50]].forEach((r) => {
+        ctx.beginPath();
+        ctx.ellipse(r[0], r[1], r[2] / 2, r[3] / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      earth.material.map = new THREE.CanvasTexture(canvas);
+      earth.material.color = new THREE.Color(0xffffff);
+      earth.material.needsUpdate = true;
+    }
+
+    function latLngToVec3(lat, lng, radius) {
+      const phi = (90 - lat) * Math.PI / 180;
+      const theta = (lng + 180) * Math.PI / 180;
+      return new THREE.Vector3(
+        -radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta)
+      );
+    }
+
+    function selectGlobeMarker(mesh) {
+      if (globe.selected) {
+        globe.selected.material.emissiveIntensity = 0.45;
+        globe.selected.scale.set(1, 1, 1);
+      }
+      globe.selected = mesh;
+      mesh.material.emissiveIntensity = 1;
+      mesh.scale.set(1.8, 1.8, 1.8);
+      mostrarPainel(mesh.userData.props.id);
+    }
+
+    function animateGlobe() {
+      requestAnimationFrame(animateGlobe);
+      if (globe.autoRotate && globe.earth) globe.earth.rotation.y += 0.0012;
+      if (globe.renderer) globe.renderer.render(globe.scene, globe.camera);
+    }
+
+    function onGlobeResize() {
+      const container = document.getElementById('threejs-container');
+      if (!globe.renderer || !container) return;
+      globe.camera.aspect = container.clientWidth / Math.max(container.clientHeight, 1);
+      globe.camera.updateProjectionMatrix();
+      globe.renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function mostrarPainel(jogoId) {
+      const feature = jogosData.features.find((f) => f.properties.id === jogoId);
+      if (!feature) return;
+      const p = feature.properties;
+      document.getElementById('panel-title').textContent = p.titulo;
+      document.getElementById('panel-img').src = p.imagem_url || '/img/placeholder.png';
+      document.getElementById('panel-origem').textContent = p.origem || '-';
+      document.getElementById('panel-jogadores').textContent = p.jogadores || '-';
+      document.getElementById('panel-categoria').textContent = p.categoria || '-';
+      document.getElementById('panel-nota').textContent = p.nota ? (p.nota + '/5') : 'Não avaliado';
+      document.getElementById('panel-link').href = '/tabuleiro?id=' + p.id;
+      document.getElementById('info-panel').classList.add('visible');
+    }
+
+    function fecharPainel() {
+      document.getElementById('info-panel').classList.remove('visible');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+  </script>
+  <script src="/js/script.js"></script>
+</body>
+</html>

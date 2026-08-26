@@ -20,6 +20,7 @@
   <nav class="main-nav" id="nav-list">
     <a href="/home" class="nav-link">Início</a>
     <a href="/catalogo" class="nav-link">Catálogo</a>
+    <a href="/mapas" class="nav-link">Mapas</a>
     <a href="/sobre" class="nav-link">Sobre Nós</a>
   </nav>
 
@@ -83,6 +84,10 @@
                     <span>
                       <%= jogo.origem %>
                     </span>
+                    <% if (jogo.latitude != null && jogo.longitude != null) { %>
+                      <span> - </span>
+                      <span>📍 mapeado</span>
+                    <% } %>
                   </div>
                 </div>
               </div>
@@ -101,6 +106,8 @@
       imagem_url: `<%= (jogo.imagem_url || '').replace(/`/g, '') %>`,
       categoria: '<%= jogo.categoria %>',
       nota: '<%= jogo.nota %>',
+      latitude: '<%= jogo.latitude != null ? jogo.latitude : '' %>',
+      longitude: '<%= jogo.longitude != null ? jogo.longitude : '' %>',
       historia: `<%= (jogo.historia || '').replace(/`/g, '').replace(/\n/g, ' ') %>`,
       regras: `<%= (jogo.regras || '').replace(/`/g, '').replace(/\n/g, ' ') %>`
     })">✏️ Editar</button>
@@ -136,6 +143,11 @@
         <input type="text" name="jogadores" placeholder="Ex: 2 jogadores">
         <label>URL da Imagem</label>
         <input type="text" name="imagem_url" placeholder="/img/nome.png">
+        <label>Latitude</label>
+        <input type="number" name="latitude" step="any" placeholder="Ex: -23.5505" min="-90" max="90">
+        <label>Longitude</label>
+        <input type="number" name="longitude" step="any" placeholder="Ex: -46.6333" min="-180" max="180">
+        <small style="color: var(--text-light); font-size: 0.8rem; display: block; margin-bottom: 10px;">Use coordenadas decimais. Ex: São Paulo = -23.5505, -46.6333</small>
         <label>Categoria</label>
         <select name="categoria">
           <option value="estrategia">🧠 Estratégia</option>
@@ -170,6 +182,11 @@
         <input type="text" name="jogadores" id="edit-jogadores">
         <label>URL da Imagem</label>
         <input type="text" name="imagem_url" id="edit-imagem_url">
+        <label>Latitude</label>
+        <input type="number" name="latitude" id="edit-latitude" step="any" placeholder="Ex: -23.5505" min="-90" max="90">
+        <label>Longitude</label>
+        <input type="number" name="longitude" id="edit-longitude" step="any" placeholder="Ex: -46.6333" min="-180" max="180">
+        <small style="color: var(--text-light); font-size: 0.8rem; display: block; margin-bottom: 10px;">Use coordenadas decimais. Ex: São Paulo = -23.5505, -46.6333</small>
         <label>Categoria</label>
         <select name="categoria" id="edit-categoria">
           <option value="estrategia">🧠 Estratégia</option>
@@ -245,6 +262,8 @@
   document.getElementById('edit-jogadores').value  = jogo.jogadores;
   document.getElementById('edit-imagem_url').value = jogo.imagem_url;
   document.getElementById('edit-nota').value       = jogo.nota;
+  document.getElementById('edit-latitude').value   = jogo.latitude || '';
+  document.getElementById('edit-longitude').value  = jogo.longitude || '';
   document.getElementById('edit-historia').value   = jogo.historia;
   document.getElementById('edit-regras').value     = jogo.regras;
 

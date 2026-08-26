@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDM | Coordenadas geográficas</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-wrap {
+      width: 94%;
+      max-width: 1100px;
+      margin: 30px auto 60px;
+    }
+
+    .admin-card {
+      background: var(--card-glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+    }
+
+    .admin-card h1 {
+      margin-bottom: 8px;
+      color: var(--text-dark);
+    }
+
+    .admin-meta {
+      color: var(--text-light);
+      margin-bottom: 18px;
+    }
+
+    table.geo-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255,255,255,0.45);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .geo-table th, .geo-table td {
+      padding: 10px 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      font-size: 0.92rem;
+      vertical-align: middle;
+    }
+
+    .geo-table th { background: rgba(179, 125, 0, 0.18); }
+
+    .geo-table input[type="number"] {
+      width: 120px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #c9b98a;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .ok { background: #d4edda; color: #155724; }
+    .missing { background: #f8d7da; color: #721c24; }
+
+    .btn-save {
+      background: var(--logo-gold);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      padding: 7px 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .top-links a {
+      display: inline-block;
+      margin: 0 10px 16px 0;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    @media (max-width: 720px) {
+      .geo-table, .geo-table thead, .geo-table tbody, .geo-table tr, .geo-table th, .geo-table td {
+        display: block;
+        width: 100%;
+      }
+      .geo-table tr { margin-bottom: 14px; border-bottom: 2px solid rgba(0,0,0,0.1); }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="main-header">
+    <div class="logo-container">
+      <img src="/img/51 Sem Título_20250220100547.png" alt="Logo" class="logo-icon">
+      <span class="logo-text">Tabuleiros do Mundo</span>
+    </div>
+    <nav class="main-nav" id="nav-list">
+      <a href="/home" class="nav-link">Início</a>
+      <a href="/catalogo" class="nav-link">Catálogo</a>
+      <a href="/mapas" class="nav-link">Mapas</a>
+      <a href="/sobre" class="nav-link">Sobre Nós</a>
+    </nav>
+    <div class="header-auth">
+      <span class="usuario-logado">👤 <%= usuario %></span>
+      <a href="/logout" class="nav-link btn-logout">Sair</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="admin-wrap">
+      <div class="top-links">
+        <a href="/mapas">← Ver mapas</a>
+        <a href="/catalogo">Catálogo</a>
+      </div>
+      <div class="admin-card">
+        <h1>Painel de coordenadas</h1>
+        <p class="admin-meta">
+          <%= jogos.length %> jogos no catálogo.
+          <% if (semCoord > 0) { %>
+            <strong><%= semCoord %></strong> ainda sem latitude/longitude.
+          <% } else { %>
+            Todos os jogos têm coordenadas.
+          <% } %>
+        </p>
+
+        <table class="geo-table">
+          <thead>
+            <tr>
+              <th>Jogo</th>
+              <th>Origem</th>
+              <th>Status</th>
+              <th>Latitude</th>
+              <th>Longitude</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% jogos.forEach((jogo) => { %>
+              <tr>
+                <td><strong><%= jogo.titulo %></strong></td>
+                <td><%= jogo.origem || '-' %></td>
+                <td>
+                  <% if (jogo.latitude != null && jogo.longitude != null) { %>
+                    <span class="badge ok">mapeado</span>
+                  <% } else { %>
+                    <span class="badge missing">sem coords</span>
+                  <% } %>
+                </td>
+                <td colspan="3">
+                  <form action="/mapas/admin/<%= jogo.id %>" method="POST" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <input type="number" name="latitude" step="any" min="-90" max="90"
+                      value="<%= jogo.latitude != null ? jogo.latitude : '' %>" placeholder="lat">
+                    <input type="number" name="longitude" step="any" min="-180" max="180"
+                      value="<%= jogo.longitude != null ? jogo.longitude : '' %>" placeholder="lng">
+                    <button class="btn-save" type="submit">Salvar</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <script src="/js/script.js"></script>
+</body>
+</html>

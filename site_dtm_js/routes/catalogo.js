@@ -2,12 +2,24 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+function parseCoord(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function requireAdmin(req, res, next) {
+  if (req.session && req.session.isAdmin === true) return next();
+  return res.status(403).send('Acesso restrito ao administrador.');
+}
+
 // GET - lista jogos
 router.get('/', (req, res) => {
   const sql = `
     SELECT id, titulo, origem, jogadores, imagem_url, historia, regras,
            COALESCE(categoria, 'estrategia') AS categoria,
-           COALESCE(nota, '') AS nota
+           COALESCE(nota, '') AS nota,
+           latitude, longitude
     FROM jogos_info ORDER BY titulo ASC
   `;
 
@@ -33,19 +45,19 @@ router.get('/', (req, res) => {
 });
 
 // POST - adiciona novo jogo
-router.post('/adicionar', (req, res) => {
-  const { titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota } = req.body;
+router.post('/adicionar', requireAdmin, (req, res) => {
+  const { titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota, latitude, longitude } = req.body;
 
   if (!titulo) {
     return res.status(400).send('O título é obrigatório.');
   }
 
   const sql = `
-    INSERT INTO jogos_info (titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO jogos_info (titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota, latitude, longitude)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.run(sql, [titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota || null], function (err) {
+  db.run(sql, [titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota || null, parseCoord(latitude), parseCoord(longitude)], function (err) {
     if (err) {
       console.error(err);
       return res.status(500).send('Erro ao adicionar jogo: ' + err.message);
@@ -55,22 +67,22 @@ router.post('/adicionar', (req, res) => {
 });
 
 // POST - edita jogo
-router.post('/editar/:id', (req, res) => {
+router.post('/editar/:id', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
-  const { titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota } = req.body;
+  const { titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota, latitude, longitude } = req.body;
 
-  if (!id || !titulo) {
-    return res.status(400).send('ID e título são obrigatórios.');
+  if (!titulo) {
+    return res.status(400).send('O título é obrigatório.');
   }
 
   const sql = `
     UPDATE jogos_info
-    SET titulo = ?, origem = ?, jogadores = ?, imagem_url = ?,
-        historia = ?, regras = ?, categoria = ?, nota = ?
+    SET titulo = ?, origem = ?, jogadores = ?, imagem_url = ?, historia = ?, 
+        regras = ?, categoria = ?, nota = ?, latitude = ?, longitude = ?
     WHERE id = ?
   `;
 
-  db.run(sql, [titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota || null, id], function (err) {
+  db.run(sql, [titulo, origem, jogadores, imagem_url, historia, regras, categoria, nota || null, parseCoord(latitude), parseCoord(longitude), id], function (err) {
     if (err) {
       console.error(err);
       return res.status(500).send('Erro ao editar jogo: ' + err.message);
@@ -80,7 +92,7 @@ router.post('/editar/:id', (req, res) => {
 });
 
 // POST - exclui jogo
-router.post('/excluir/:id', (req, res) => {
+router.post('/excluir/:id', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
 
   if (!id) {

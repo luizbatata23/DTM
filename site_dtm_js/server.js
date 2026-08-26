@@ -42,6 +42,7 @@ app.use('/', require('./routes/paginas'));
 // Rotas de funcionalidades
 app.use('/catalogo', require('./routes/catalogo'));
 app.use('/tabuleiro', require('./routes/tabuleiro'));
+app.use('/mapas', require('./routes/mapas'));
 app.use('/', require('./routes/auth'));
 
 // ========================

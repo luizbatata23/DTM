@@ -39,6 +39,10 @@ db.serialize(() => {
     )
   `);
 
+  // Migração: coordenadas geográficas (ignora erro se a coluna já existir)
+  db.run(`ALTER TABLE jogos_info ADD COLUMN latitude REAL`, () => {});
+  db.run(`ALTER TABLE jogos_info ADD COLUMN longitude REAL`, () => {});
+
   // Insere ADM com senha em hash (só se ainda não existir)
   bcrypt.hash('tabuleiros@1234', 10, (err, hash) => {
     if (err) {
@@ -109,6 +113,49 @@ db.serialize(() => {
     });
 
     console.log('Jogos iniciais inseridos com sucesso!');
+  });
+
+  // Preenche coordenadas de origem quando ainda estiverem vazias
+  const coordenadasPorTitulo = {
+    'Mu Torere': [-38.1368, 176.2497],
+    'Coité e Galinhas': [-15.7939, -47.8828],
+    'Awithlaknannai Mosona': [35.0844, -106.6504],
+    'Adugo': [-3.1190, -60.0217],
+    'Wali': [12.6392, -8.0029],
+    'Shatar': [47.8864, 106.9057],
+    'Xatranje': [33.3152, 44.3661],
+    'Pancha Keliya': [6.9271, 79.8612],
+    'Fetaix': [14.7167, -17.4677],
+    'Makruk': [13.7563, 100.5018],
+    'Senterej': [9.0320, 38.7469],
+    'Shax': [2.0469, 45.3182],
+    'Kharbaga': [36.7538, 3.0588],
+    'Bolotoudou': [12.3657, -1.5339],
+    'Cerco da Pirâmide': [48.8566, 2.3522],
+    'Morabaraba': [-26.2041, 28.0473],
+    'Pat Gonu': [37.5665, 126.9780],
+    'Sixteen Soldiers': [13.0827, 80.2707],
+    'Pretwa': [28.6139, 77.2090],
+    'Pentalpha': [37.9838, 23.7275],
+    'Pulijudam': [17.3850, 78.4867],
+    'Felli': [27.7172, 85.3240],
+    'Kororobodo': [6.5244, 3.3792],
+    'Queah': [6.2907, -10.7605],
+    'Aadupuli Attam': [13.0827, 80.2707],
+    'Ntxuva': [-25.9692, 32.5732],
+    'Choko': [5.6037, -0.1870],
+    'Zamma': [31.6295, -7.9811]
+  };
+
+  db.all(`SELECT id, titulo FROM jogos_info WHERE latitude IS NULL OR longitude IS NULL`, [], (err, rows) => {
+    if (err || !rows) return;
+    const stmt = db.prepare(`UPDATE jogos_info SET latitude = ?, longitude = ? WHERE id = ?`);
+    rows.forEach((row) => {
+      const coords = coordenadasPorTitulo[row.titulo];
+      if (!coords) return;
+      stmt.run(coords[0], coords[1], row.id);
+    });
+    stmt.finalize();
   });
 
 });

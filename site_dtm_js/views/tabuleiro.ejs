@@ -169,6 +169,7 @@
     <nav class="main-nav" id="nav-list">
       <a href="/home" class="nav-link">Início</a>
       <a href="/catalogo" class="nav-link active">Catálogo</a>
+      <a href="/mapas" class="nav-link">Mapas</a>
       <a href="/sobre" class="nav-link">Sobre Nós</a>
       <a href="/" class="nav-link login">Login</a>
     </nav>
@@ -186,8 +187,11 @@
       </h1>
 
       <div class="info-stats">
-        <span>🌍 <%= jogo.origem %></span>
-        <span>👥 <%= jogo.jogadores %></span>
+        <span><%= jogo.origem %></span>
+        <span><%= jogo.jogadores %></span>
+        <% if (jogo.latitude != null && jogo.longitude != null) { %>
+          <span>📍 <%= Number(jogo.latitude).toFixed(2) %>, <%= Number(jogo.longitude).toFixed(2) %></span>
+        <% } %>
       </div>
 
       <div class="info-section">
