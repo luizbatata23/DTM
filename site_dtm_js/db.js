@@ -23,8 +23,7 @@ db.serialize(() => {
       imagem_url TEXT,
       historia TEXT,
       regras TEXT,
-      categoria TEXT,
-      nota REAL
+      categoria TEXT
     )
   `);
 
@@ -38,6 +37,15 @@ db.serialize(() => {
       senha TEXT NOT NULL
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS avaliacao(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario TEXT,
+    texto TEXT,
+    estrelas INT
+    )
+    `)
 
   // Migração: coordenadas geográficas (ignora erro se a coluna já existir)
   db.run(`ALTER TABLE jogos_info ADD COLUMN latitude REAL`, () => {});

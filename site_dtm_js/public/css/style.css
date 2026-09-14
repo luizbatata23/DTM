@@ -1112,3 +1112,14 @@ body {
     line-height: 1.4;
   }
 }
+
+.main-comentarios {
+    display: flex;
+    height: 40vh;
+    width: 60vw;
+    background-color: #00ff4c;
+    align-content: center;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: space-around;
+  }
