@@ -14,6 +14,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 db.serialize(() => {
 
+  db.run(`PRAGMA foreign_keys = ON`);
+
   db.run(`
     CREATE TABLE IF NOT EXISTS jogos_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,12 +42,13 @@ db.serialize(() => {
 
   db.run(`
     CREATE TABLE IF NOT EXISTS avaliacao(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    usuario TEXT,
+    id INTEGER PRIMARY KEY,
+    usuario_id INTEGER NOT NULL,
     texto TEXT,
-    estrelas INT
+    estrelas INT,
+    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
     )
-    `)
+`)
 
   // Migração: coordenadas geográficas (ignora erro se a coluna já existir)
   db.run(`ALTER TABLE jogos_info ADD COLUMN latitude REAL`, () => {});
