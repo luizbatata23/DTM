@@ -41,15 +41,30 @@ db.serialize(() => {
   `);
 
   db.run(`
-    CREATE TABLE IF NOT EXISTS avaliacao(
-    id INTEGER PRIMARY KEY,
-    usuario_id INTEGER NOT NULL,
-    texto TEXT,
-    estrelas INT,
-    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
-    )
-`)
+  CREATE TABLE IF NOT EXISTS comentarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    jogo_id INTEGER NOT NULL,
+    usuario_id INTEGER,
+    usuario_nome TEXT NOT NULL,
+    texto TEXT NOT NULL,
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (jogo_id) REFERENCES jogos_info(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL
+  )
+`);
 
+  db.run(`ALTER TABLE comentarios ADD COLUMN estrelas INTEGER DEFAULT 5`, () => {});  
+  db.run(`
+  CREATE TABLE IF NOT EXISTS favoritos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER NOT NULL,
+    jogo_id INTEGER NOT NULL,
+    data_adicionado DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(usuario_id, jogo_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE,
+    FOREIGN KEY (jogo_id) REFERENCES jogos_info(id) ON DELETE CASCADE
+  )
+`);  
   // Migração: coordenadas geográficas (ignora erro se a coluna já existir)
   db.run(`ALTER TABLE jogos_info ADD COLUMN latitude REAL`, () => {});
   db.run(`ALTER TABLE jogos_info ADD COLUMN longitude REAL`, () => {});

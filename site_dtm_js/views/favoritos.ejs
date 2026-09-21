@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDM | Meus Favoritos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+
+  <a style="text-decoration: none;" href="/home">
+    <header class="main-header">
+      <div class="logo-container">
+        <img src="/img/51 Sem Título_20250220100547.png" alt="Logo" class="logo-icon">
+        <span class="logo-text">Tabuleiros do Mundo</span>
+      </div>
+    
+  </a>
+
+  <nav class="main-nav" id="nav-list">
+    <a href="/home" class="nav-link">Início</a>
+    <a href="/catalogo" class="nav-link">Catálogo</a>
+    <a href="/catalogo/meus-favoritos" class="nav-link active">❤️ Favoritos</a>
+    <a href="/sobre" class="nav-link">Sobre Nós</a>
+    <a href="/mapas" class="nav-link">Mapas</a>
+  </nav>
+
+  <div class="header-auth">
+    <% if (usuario) { %>
+      <span class="usuario-logado">👤 <%= usuario %></span>
+      <a href="/logout" class="nav-link btn-logout">Sair</a>
+    <% } else { %>
+      <a href="/" class="nav-link login">Login</a>
+    <% } %>
+  </div>
+</header>
+  <div class="menu-toggle">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+
+  <main class="hero-section">
+    <div class="hero-container">
+      <img src="/img/51 Sem Título_20250220100547.png" alt="Logo" class="center-icon">
+      <h1 class="hero-title">❤️ Meus Jogos Favoritos</h1>
+      <p class="hero-subtitle">Seus jogos preferidos em um só lugar.</p>
+
+      <% if (jogos && jogos.length > 0) { %>
+        <div class="game-grid">
+          <% jogos.forEach(jogo => { %>
+            <div class="game-card" data-title="<%= jogo.titulo.toLowerCase() %>"
+              data-category="<%= jogo.categoria.toLowerCase() %>">
+              <div class="card-inner">
+
+                <div class="card-front">
+                  <div class="game-image">
+                    <img src="<%= jogo.imagem_url %>" alt="<%= jogo.titulo %>" class="game-img-obj">
+                  </div>
+                  <div class="game-info">
+                    <h3 class="game-title">
+                      <%= jogo.titulo %>
+                    </h3>
+                    <div class="game-details">
+                      <span>⭐ <%= jogo.nota %></span>
+                      <span> - </span>
+                      <span>👥 <%= jogo.jogadores %></span>
+                      <span> - </span>
+                      <span>
+                        <%= jogo.origem %>
+                      </span>
+                      <% if (jogo.latitude != null && jogo.longitude != null) { %>
+                        <span> - </span>
+                        <span>📍 mapeado</span>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-back">
+                  <h3 class="game-title">Resumo</h3>
+                  <p class="game-description"><%= jogo.historiaShort %></p>
+                  <a href="/tabuleiro?id=<%= jogo.id %>" class="btn-details">VER DETALHES</a>
+
+                  <button 
+                    class="btn-remover-favorito"
+                    data-id="<%= jogo.id %>"
+                    style="margin-top: 10px; background: #c0392b; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.3s;"
+                    onmouseover="this.style.background='#96281b'"
+                    onmouseout="this.style.background='#c0392b'">
+                    ❌ Remover dos Favoritos
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div class="empty-state">
+          <h2>Você ainda não tem jogos favoritos</h2>
+          <p>Explore nosso catálogo e adicione seus jogos preferidos aos favoritos!</p>
+          <a href="/catalogo" class="btn-voltar-catalogo">Ir para o Catálogo</a>
+        </div>
+      <% } %>
+    </div>
+  </main>
+
+  <footer class="main-footer">
+    <p>© 2025 Tabuleiros do Mundo.</p>
+    <div class="footer-links">
+      <a href="https://www.instagram.com/tabuleirosdomundo">Instagram</a>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const cards = document.querySelectorAll('.game-card');
+
+      // Flip card ao clicar
+      cards.forEach(card => {
+        const cardInner = card.querySelector('.card-inner');
+
+        cardInner.addEventListener('click', function(e) {
+          const isButton = e.target.closest('.btn-remover-favorito') || 
+                           e.target.closest('.btn-details');
+
+          if (!isButton) {
+            card.classList.toggle('virado');
+          }
+        });
+      });
+
+      // Remover dos favoritos
+      document.querySelectorAll('.btn-remover-favorito').forEach(botao => {
+        botao.addEventListener('click', async function() {
+          const jogoId = this.dataset.id;
+
+          if (!confirm('Tem certeza que deseja remover dos favoritos?')) {
+            return;
+          }
+
+          try {
+            const response = await fetch(`/catalogo/favoritar/${jogoId}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) {
+              throw new Error('Erro ao remover favorito');
+            }
+
+            // Remove o card da página
+            const card = this.closest('.game-card');
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.8)';
+
+            setTimeout(() => {
+              card.remove();
+
+              // Se não há mais cards, recarrega a página
+              if (document.querySelectorAll('.game-card').length === 0) {
+                location.reload();
+              }
+            }, 300);
+
+            alert('Removido dos favoritos!');
+          } catch (error) {
+            console.error(error);
+            alert('Erro ao remover dos favoritos');
+          }
+        });
+      });
+    });
+  </script>
+  <script src="js/script.js"></script>
+
+</body>
+
+</html>

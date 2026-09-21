@@ -13,6 +13,11 @@ function requireAdmin(req, res, next) {
   return res.status(403).send('Acesso restrito ao administrador.');
 }
 
+function requireAuth(req, res, next) {
+  if (req.session && req.session.usuario) return next();
+  return res.status(401).json({ erro: 'Você precisa estar logado' });
+}
+
 // GET - lista jogos
 router.get('/', (req, res) => {
   const sql = `
@@ -23,25 +28,46 @@ router.get('/', (req, res) => {
     FROM jogos_info ORDER BY titulo ASC
   `;
 
-  db.all(sql, [], (err, jogos) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Erro ao buscar jogos: ' + err.message);
-    }
+  let favoritoIds = [];
 
-    jogos = jogos.map(j => ({
-      ...j,
-      historiaShort: j.historia
-        ? j.historia.substring(0, 120) + (j.historia.length > 120 ? '...' : '')
-        : ''
-    }));
+  // Se usuário está logado, busca seus favoritos
+  if (req.session && req.session.usuario) {
+    db.all(
+      `SELECT jogo_id FROM favoritos WHERE usuario_id = (SELECT id FROM usuario WHERE usuario = ?)`,
+      [req.session.usuario],
+      (err, rows) => {
+        if (!err && rows) {
+          favoritoIds = rows.map(r => r.jogo_id);
+        }
+        buscarJogos();
+      }
+    );
+  } else {
+    buscarJogos();
+  }
 
-    res.render('catalogo', {
-      jogos,
-      usuario: req.session.usuario || null,
-      isAdmin: req.session.isAdmin === true
+  function buscarJogos() {
+    db.all(sql, [], (err, jogos) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Erro ao buscar jogos: ' + err.message);
+      }
+
+      jogos = jogos.map(j => ({
+        ...j,
+        historiaShort: j.historia
+          ? j.historia.substring(0, 120) + (j.historia.length > 120 ? '...' : '')
+          : '',
+        isFavorito: favoritoIds.includes(j.id)
+      }));
+
+      res.render('catalogo', {
+        jogos,
+        usuario: req.session.usuario || null,
+        isAdmin: req.session.isAdmin === true
+      });
     });
-  });
+  }
 });
 
 // POST - adiciona novo jogo
@@ -105,6 +131,85 @@ router.post('/excluir/:id', requireAdmin, (req, res) => {
       return res.status(500).send('Erro ao excluir jogo: ' + err.message);
     }
     res.redirect('/catalogo');
+  });
+});
+
+// POST - adiciona jogo aos favoritos
+router.post('/favoritar/:id', requireAuth, (req, res) => {
+  const jogoId = parseInt(req.params.id);
+  const usuario = req.session.usuario;
+
+  db.get(`SELECT id FROM usuario WHERE usuario = ?`, [usuario], (err, user) => {
+    if (err || !user) {
+      return res.status(500).json({ erro: 'Erro ao buscar usuário' });
+    }
+
+    const sql = `INSERT OR IGNORE INTO favoritos (usuario_id, jogo_id) VALUES (?, ?)`;
+    db.run(sql, [user.id, jogoId], function(err) {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ erro: 'Erro ao adicionar favorito' });
+      }
+      res.json({ mensagem: 'Adicionado aos favoritos!' });
+    });
+  });
+});
+
+// DELETE - remove jogo dos favoritos
+router.delete('/favoritar/:id', requireAuth, (req, res) => {
+  const jogoId = parseInt(req.params.id);
+  const usuario = req.session.usuario;
+
+  db.get(`SELECT id FROM usuario WHERE usuario = ?`, [usuario], (err, user) => {
+    if (err || !user) {
+      return res.status(500).json({ erro: 'Erro ao buscar usuário' });
+    }
+
+    db.run(`DELETE FROM favoritos WHERE usuario_id = ? AND jogo_id = ?`, [user.id, jogoId], function(err) {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ erro: 'Erro ao remover favorito' });
+      }
+      res.json({ mensagem: 'Removido dos favoritos!' });
+    });
+  });
+});
+
+// GET - lista jogos favoritos do usuário
+router.get('/meus-favoritos', requireAuth, (req, res) => {
+  const usuario = req.session.usuario;
+
+  const sql = `
+    SELECT j.id, j.titulo, j.origem, j.jogadores, j.imagem_url, j.historia, j.regras,
+           COALESCE(j.categoria, 'estrategia') AS categoria,
+           COALESCE(j.nota, '') AS nota,
+           j.latitude, j.longitude
+    FROM jogos_info j
+    INNER JOIN favoritos f ON j.id = f.jogo_id
+    INNER JOIN usuario u ON f.usuario_id = u.id
+    WHERE u.usuario = ?
+    ORDER BY f.data_adicionado DESC
+  `;
+
+  db.all(sql, [usuario], (err, jogos) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Erro ao buscar favoritos: ' + err.message);
+    }
+
+    jogos = jogos.map(j => ({
+      ...j,
+      historiaShort: j.historia
+        ? j.historia.substring(0, 120) + (j.historia.length > 120 ? '...' : '')
+        : '',
+      isFavorito: true
+    }));
+
+    res.render('favoritos', {
+      jogos,
+      usuario: req.session.usuario || null,
+      isAdmin: req.session.isAdmin === true
+    });
   });
 });
 

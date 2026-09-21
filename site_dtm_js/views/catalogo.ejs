@@ -22,6 +22,9 @@
     <a href="/home" class="nav-link">Início</a>
     <a href="/catalogo" class="nav-link">Catálogo</a>
     <a href="/mapas" class="nav-link">Mapas</a>
+    <% if (usuario) { %>
+    <a href="/catalogo/meus-favoritos" class="nav-link">❤️ Favoritos</a>
+  <% } %>
     <a href="/sobre" class="nav-link">Sobre Nós</a>
   </nav>
 
@@ -97,7 +100,13 @@
   <h3 class="game-title">Resumo</h3>
   <p class="game-description"><%= jogo.historiaShort %></p>
   <a href="/tabuleiro?id=<%= jogo.id %>" class="btn-details">VER DETALHES</a>
-
+  <button 
+  class="btn-favoritar"
+  data-id="<%= jogo.id %>"
+  data-favorito="<%= jogo.isFavorito ? 'true' : 'false' %>"
+  style="margin-top: 10px; background: <%= jogo.isFavorito ? '#e74c3c' : '#95a5a6' %>; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.3s;">
+  <%= jogo.isFavorito ? '❤️ Remover dos Favoritos' : '🤍 Adicionar aos Favoritos' %>
+</button>              
   <% if (isAdmin) { %>
     <button class="btn-editar" onclick="abrirModalEditar({
       id: '<%= jogo.id %>',
@@ -218,7 +227,7 @@
       <a href="https://www.instagram.com/tabuleirosdomundo">Instagram</a>
     </div>
   </footer>
-
+    
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const searchInput = document.getElementById('searchInput');
@@ -290,6 +299,43 @@ function fecharModalEditar(event) {
     fecharModalEditarBtn();
   }
 }
+// Sistema de favoritos
+document.querySelectorAll('.btn-favoritar').forEach(botao => {
+  botao.addEventListener('click', async function(e) {
+    e.stopPropagation();
+
+    const jogoId = this.dataset.id;
+    const isFavorito = this.dataset.favorito === 'true';
+
+    try {
+      const method = isFavorito ? 'DELETE' : 'POST';
+      const response = await fetch(`/catalogo/favoritar/${jogoId}`, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar favorito');
+      }
+
+      // Atualiza o botão
+      if (isFavorito) {
+        this.dataset.favorito = 'false';
+        this.style.background = '#95a5a6';
+        this.textContent = '🤍 Adicionar aos Favoritos';
+        alert('Removido dos favoritos!');
+      } else {
+        this.dataset.favorito = 'true';
+        this.style.background = '#e74c3c';
+        this.textContent = '❤️ Remover dos Favoritos';
+        alert('Adicionado aos favoritos!');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao atualizar favorito');
+    }
+  });
+});
   </script>
   <script src="js/script.js"></script>
 </body>

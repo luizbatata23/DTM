@@ -170,6 +170,9 @@
       <a href="/home" class="nav-link">Início</a>
       <a href="/catalogo" class="nav-link active">Catálogo</a>
       <a href="/mapas" class="nav-link">Mapas</a>
+      <% if (usuario) { %>
+    <a href="/catalogo/meus-favoritos" class="nav-link">❤️ Favoritos</a>
+  <% } %>
       <a href="/sobre" class="nav-link">Sobre Nós</a>
       <a href="/" class="nav-link login">Login</a>
     </nav>
@@ -231,19 +234,293 @@
     </div>
   </div>
 </div>
-<div class="main-comentarios">
-    <!--area de comentarios-->
-    <div class="main" style="display: flex;"><h1>comentarios:</h1>
-    <div>comentários</div>
-    </div>
+<!-- Seção de Comentários -->
+<div class="info-section" style="max-width: 900px; margin: 40px auto; width: 90%;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 style="margin: 0;">💬 Comentários</h2>
+    <% if (totalAvaliacoes > 0) { %>
+      <div style="text-align: right;">
+        <div style="font-size: 1.5rem; color: var(--logo-gold);">
+          <% for (let i = 0; i < 5; i++) { %>
+            <span style="color: <%= i < Math.round(mediaEstrelas) ? 'var(--logo-gold)' : '#ddd' %>;">★</span>
+          <% } %>
+        </div>
+        <small style="color: #999;">
+          <%= mediaEstrelas %> de 5 (<%= totalAvaliacoes %> <%= totalAvaliacoes === 1 ? 'avaliação' : 'avaliações' %>)
+        </small>
+      </div>
+    <% } %>
   </div>
-  </main>
 
-  <footer class="main-footer">
-    <p>© 2026 Tabuleiros do Mundo.</p>
-  </footer>
+  <!-- Formulário para adicionar comentário -->
+  <% if (usuario) { %>
+    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+      <h3 style="color: var(--text-dark); margin-bottom: 15px;">Deixe seu comentário</h3>
 
-  <script src="js/script.js"></script>
+      <form id="formComentario" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: rgba(179,125,0,0.2); padding: 10px; border-radius: 5px; color: var(--text-dark); font-weight: bold;">
+          👤 Logado como: <%= usuario %>
+        </div>
+
+        <!-- Seletor de Estrelas -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label style="color: var(--text-dark); font-weight: bold;">Sua avaliação:</label>
+          <div id="estrelasSeletor" style="display: flex; gap: 5px; font-size: 1.8rem; cursor: pointer;">
+            <% for (let i = 1; i <= 5; i++) { %>
+              <span class="estrela" data-valor="<%= i %>" style="color: #ddd; transition: 0.2s; cursor: pointer;">★</span>
+            <% } %>
+          </div>
+          <span id="estrelaTexto" style="color: var(--text-dark); font-weight: bold; min-width: 80px;">5 estrelas</span>
+        </div>
+
+        <textarea 
+          id="textoComentario" 
+          placeholder="Escreva seu comentário aqui..." 
+          rows="4"
+          required
+          style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+
+        <input type="hidden" id="estrelasSelecionadas" value="5">
+
+        <button 
+          type="submit" 
+          style="background: var(--logo-gold); color: white; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s;">
+          Enviar Comentário
+        </button>
+      </form>
+    </div>
+  <% } else { %>
+    <div style="background: rgba(255,0,0,0.1); padding: 20px; border-radius: 10px; margin-bottom: 30px; text-align: center;">
+      <p style="color: var(--text-dark); margin: 0;">
+        <strong>Faça login para comentar!</strong> 
+        <a href="/" style="color: var(--logo-gold); text-decoration: none;">Clique aqui para entrar</a>
+      </p>
+    </div>
+  <% } %>
+
+  <!-- Lista de comentários -->
+  <div id="listaComentarios">
+    <% if (comentarios && comentarios.length > 0) { %>
+      <% comentarios.forEach(comentario => { %>
+        <div class="comentario-item" data-id="<%= comentario.id %>" style="background: rgba(179,125,0,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--logo-gold); position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <strong style="color: var(--text-dark);">
+                👤 <%= comentario.usuario_nome %>
+              </strong>
+              <div style="font-size: 1.2rem; color: var(--logo-gold); margin-top: 5px;">
+                <% for (let i = 0; i < 5; i++) { %>
+                  <span style="color: <%= i < comentario.estrelas ? 'var(--logo-gold)' : '#ddd' %>;">★</span>
+                <% } %>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <small style="color: #999;">
+                <%= new Date(comentario.data_criacao).toLocaleDateString('pt-BR') %>
+              </small>
+              <% if (usuario === comentario.usuario_nome || isAdmin) { %>
+                <button 
+                  class="btn-deletar-comentario"
+                  data-id="<%= comentario.id %>"
+                  style="background: #c0392b; color: white; border: none; padding: 5px 10px; border-radius: 3px; font-size: 0.8rem; cursor: pointer; transition: 0.3s;"
+                  onmouseover="this.style.background='#96281b'"
+                  onmouseout="this.style.background='#c0392b'">
+                  🗑 Deletar
+                </button>
+              <% } %>
+            </div>
+          </div>
+          <p style="color: #4a4123; line-height: 1.6; margin: 0;">
+            <%= comentario.texto %>
+          </p>
+        </div>
+      <% }); %>
+    <% } else { %>
+      <p style="text-align: center; color: #999; padding: 20px;">
+        Nenhum comentário ainda. Seja o primeiro a comentar!
+      </p>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  // Sistema de seleção de estrelas
+  <% if (usuario) { %>
+    const estrelas = document.querySelectorAll('.estrela');
+    const estrelasSelecionadas = document.getElementById('estrelasSelecionadas');
+    const estrelaTexto = document.getElementById('estrelaTexto');
+
+    estrelas.forEach(estrela => {
+      estrela.addEventListener('click', function() {
+        const valor = this.dataset.valor;
+        estrelasSelecionadas.value = valor;
+
+        // Atualiza cores
+        estrelas.forEach((e, index) => {
+          if (index < valor) {
+            e.style.color = 'var(--logo-gold)';
+          } else {
+            e.style.color = '#ddd';
+          }
+        });
+
+        // Atualiza texto
+        estrelaTexto.textContent = valor + ' ' + (valor == 1 ? 'estrela' : 'estrelas');
+      });
+
+      // Efeito hover
+      estrela.addEventListener('mouseover', function() {
+        const valor = this.dataset.valor;
+        estrelas.forEach((e, index) => {
+          if (index < valor) {
+            e.style.color = 'var(--logo-gold)';
+          } else {
+            e.style.color = '#ddd';
+          }
+        });
+      });
+    });
+
+    document.getElementById('estrelasSeletor').addEventListener('mouseleave', function() {
+      const valor = estrelasSelecionadas.value;
+      estrelas.forEach((e, index) => {
+        if (index < valor) {
+          e.style.color = 'var(--logo-gold)';
+        } else {
+          e.style.color = '#ddd';
+        }
+      });
+    });
+  <% } %>
+
+  // Enviar comentário
+  <% if (usuario) { %>
+    document.getElementById('formComentario').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const texto = document.getElementById('textoComentario').value;
+      const jogoId = '<%= jogo.id %>';
+      const usuarioNome = '<%= usuario %>';
+      const estrelas = document.getElementById('estrelasSelecionadas').value;
+
+      try {
+        const response = await fetch('/tabuleiro/comentario', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jogo_id: jogoId,
+            usuario_nome: usuarioNome,
+            texto: texto,
+            estrelas: estrelas
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao salvar comentário');
+        }
+
+        const data = await response.json();
+
+        // Limpa o formulário
+        document.getElementById('formComentario').reset();
+        document.getElementById('estrelasSelecionadas').value = '5';
+        document.getElementById('estrelaTexto').textContent = '5 estrelas';
+        document.querySelectorAll('.estrela').forEach((e, i) => {
+          e.style.color = i < 5 ? 'var(--logo-gold)' : '#ddd';
+        });
+
+        // Adiciona o novo comentário à lista
+        const novoComentario = document.createElement('div');
+        novoComentario.className = 'comentario-item';
+        novoComentario.dataset.id = data.id;
+        novoComentario.style.cssText = 'background: rgba(179,125,0,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--logo-gold); position: relative;';
+
+        let estrelaHtml = '';
+        for (let i = 0; i < 5; i++) {
+          estrelaHtml += `<span style="color: ${i < data.estrelas ? 'var(--logo-gold)' : '#ddd'};">★</span>`;
+        }
+
+        novoComentario.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <strong style="color: var(--text-dark);">👤 ${data.usuario_nome}</strong>
+              <div style="font-size: 1.2rem; color: var(--logo-gold); margin-top: 5px;">
+                ${estrelaHtml}
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <small style="color: #999;">${data.data_criacao}</small>
+              <button 
+                class="btn-deletar-comentario"
+                data-id="${data.id}"
+                style="background: #c0392b; color: white; border: none; padding: 5px 10px; border-radius: 3px; font-size: 0.8rem; cursor: pointer; transition: 0.3s;"
+                onmouseover="this.style.background='#96281b'"
+                onmouseout="this.style.background='#c0392b'">
+                🗑 Deletar
+              </button>
+            </div>
+          </div>
+          <p style="color: #4a4123; line-height: 1.6; margin: 0;">${data.texto}</p>
+        `;
+
+        // Insere no topo da lista
+        const lista = document.getElementById('listaComentarios');
+        const msgVazia = lista.querySelector('p');
+        if (msgVazia && msgVazia.textContent.includes('Nenhum comentário')) {
+          lista.innerHTML = '';
+        }
+        lista.insertBefore(novoComentario, lista.firstChild);
+
+        // Adiciona evento de delete ao novo botão
+        novoComentario.querySelector('.btn-deletar-comentario').addEventListener('click', deletarComentario);
+
+        // Recarrega a página para atualizar a média de estrelas
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+
+        alert('Comentário enviado com sucesso!');
+      } catch (error) {
+        console.error(error);
+        alert('Erro ao enviar comentário');
+      }
+    });
+  <% } %>
+
+  // Deletar comentário
+  function deletarComentario(e) {
+    const botao = e.target.closest('.btn-deletar-comentario');
+    const comentarioId = botao.dataset.id;
+
+    if (!confirm('Tem certeza que deseja deletar este comentário?')) {
+      return;
+    }
+
+    fetch(`/tabuleiro/comentario/${comentarioId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Erro ao deletar comentário');
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Recarrega a página para atualizar a média de estrelas
+      location.reload();
+    })
+    .catch(error => {
+      console.error(error);
+      alert('Erro ao deletar comentário');
+    });
+  }
+
+  // Adiciona evento de delete a todos os botões existentes
+  document.querySelectorAll('.btn-deletar-comentario').forEach(botao => {
+    botao.addEventListener('click', deletarComentario);
+  });
+</script>
 </body>
 
 </html>

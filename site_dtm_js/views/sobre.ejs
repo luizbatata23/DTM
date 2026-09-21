@@ -21,6 +21,9 @@
     <a href="/home" class="nav-link">Início</a>
     <a href="/catalogo" class="nav-link">Catálogo</a>
     <a href="/mapas" class="nav-link">Mapas</a>
+    <% if (usuario) { %>
+    <a href="/catalogo/meus-favoritos" class="nav-link">❤️ Favoritos</a>
+  <% } %>
     <a href="/sobre" class="nav-link">Sobre Nós</a>
   </nav>
 
